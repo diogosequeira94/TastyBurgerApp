@@ -3,7 +3,9 @@ package com.example.ifood.model;
 import com.example.ifood.helper.ConfiguracaoFirebase;
 import com.google.firebase.database.DatabaseReference;
 
-public class Empresa {
+import java.io.Serializable;
+
+public class Empresa implements Serializable {
 
     //We are gonna save all info for the company here
 

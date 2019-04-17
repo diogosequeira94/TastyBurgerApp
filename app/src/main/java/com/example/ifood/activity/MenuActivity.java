@@ -1,6 +1,8 @@
 package com.example.ifood.activity;
 
 import android.app.AlertDialog;
+import android.content.DialogInterface;
+import android.preference.DialogPreference;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
@@ -9,6 +11,9 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -16,7 +21,10 @@ import com.example.ifood.R;
 import com.example.ifood.adapter.AdapterProduto;
 import com.example.ifood.helper.ConfiguracaoFirebase;
 import com.example.ifood.helper.UsuarioFirebase;
+import com.example.ifood.listener.RecyclerItemClickListener;
 import com.example.ifood.model.Empresa;
+import com.example.ifood.model.ItemPedido;
+import com.example.ifood.model.Pedido;
 import com.example.ifood.model.Produto;
 import com.example.ifood.model.Usuario;
 import com.google.firebase.database.DataSnapshot;
@@ -42,10 +50,12 @@ public class MenuActivity extends AppCompatActivity {
 
     private AdapterProduto adapterProduto;
     private List<Produto> produtos = new ArrayList<>();
+    private List<ItemPedido> itensCarrinho = new ArrayList<>();
     private DatabaseReference firebaseRef;
     private String idEmpresa;
     private String idUsuarioLogado;
     private Usuario usuario;
+    private Pedido pedidoRecuperado;
 
 
     @Override
@@ -85,9 +95,95 @@ public class MenuActivity extends AppCompatActivity {
         recyclerProdutosCardapio.setHasFixedSize(true);
         adapterProduto = new AdapterProduto(produtos, this);
         recyclerProdutosCardapio.setAdapter( adapterProduto );
+
+        //OnClick
+        recyclerProdutosCardapio.addOnItemTouchListener(
+                new RecyclerItemClickListener(
+                        this, recyclerProdutosCardapio,
+                        new RecyclerItemClickListener.OnItemClickListener() {
+                            @Override
+                            public void onItemClick(View view, int position) {
+                                confirmarQuantidade(position);
+                            }
+
+                            @Override
+                            public void onLongItemClick(View view, int position) {
+
+                            }
+
+                            @Override
+                            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+
+                            }
+                        }
+                )
+        );
+
         //Method to recover the products
         recuperarProdutos();
         recuperarDadosUsuario();
+
+
+    }
+
+    private void confirmarQuantidade(final int posicao){
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Quantity");
+        builder.setMessage("Insert Quantity");
+
+        //Creating EditText inside
+
+        final EditText editQuantidade = new EditText(this);
+        editQuantidade.setText("1");
+
+        builder.setView( editQuantidade );
+
+
+
+        builder.setPositiveButton("Confirm", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+
+                String quantidade = editQuantidade.getText().toString();
+
+                //Recovering Selected Product
+
+                Produto produtoSelecionado = produtos.get(posicao);
+
+                ItemPedido itemPedido = new ItemPedido();
+                itemPedido.setIdProduto(produtoSelecionado.getIdProduto());
+                itemPedido.setNomeProduto(produtoSelecionado.getNome());
+                itemPedido.setPreco(produtoSelecionado.getPreco());
+                itemPedido.setQuantidade( Integer.parseInt(quantidade) );
+
+
+                itensCarrinho.add(itemPedido);
+
+                //Saving
+                if (pedidoRecuperado == null){
+                    pedidoRecuperado = new Pedido(idUsuarioLogado, idEmpresa);
+                }
+
+                pedidoRecuperado.setNome( usuario.getNome() );
+                pedidoRecuperado.setEndereco( usuario.getEndereco() );
+                pedidoRecuperado.setItens( itensCarrinho );
+                pedidoRecuperado.salvar();
+
+
+
+
+            }
+        });
+
+        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+
+            }
+        });
+        AlertDialog dialog = builder.create();
+        dialog.show();
 
 
     }

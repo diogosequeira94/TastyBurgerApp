@@ -16,6 +16,7 @@ import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.example.ifood.R;
 import com.example.ifood.adapter.AdapterProduto;
@@ -35,6 +36,7 @@ import com.squareup.picasso.Picasso;
 
 import org.w3c.dom.Text;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -47,6 +49,7 @@ public class MenuActivity extends AppCompatActivity {
     private TextView textNomeEmpresaCardapio;
     private Empresa empresaSelecionada;
     private AlertDialog dialog;
+    private TextView textCarrinhoQtd, textCarrinhoTotal;
 
     private AdapterProduto adapterProduto;
     private List<Produto> produtos = new ArrayList<>();
@@ -56,6 +59,9 @@ public class MenuActivity extends AppCompatActivity {
     private String idUsuarioLogado;
     private Usuario usuario;
     private Pedido pedidoRecuperado;
+    private int qtdItensCarrinho;
+    private Double totalCarrinho;
+
 
 
     @Override
@@ -145,6 +151,7 @@ public class MenuActivity extends AppCompatActivity {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
 
+
                 String quantidade = editQuantidade.getText().toString();
 
                 //Recovering Selected Product
@@ -165,11 +172,10 @@ public class MenuActivity extends AppCompatActivity {
                     pedidoRecuperado = new Pedido(idUsuarioLogado, idEmpresa);
                 }
 
-                pedidoRecuperado.setNome( usuario.getNome() );
-                pedidoRecuperado.setEndereco( usuario.getEndereco() );
-                pedidoRecuperado.setItens( itensCarrinho );
-                pedidoRecuperado.salvar();
-
+                    pedidoRecuperado.setNome( usuario.getNome() );
+                    pedidoRecuperado.setEndereco( usuario.getEndereco() );
+                    pedidoRecuperado.setItens( itensCarrinho );
+                    pedidoRecuperado.salvar();
 
 
 
@@ -221,7 +227,57 @@ public class MenuActivity extends AppCompatActivity {
 
     private void recuperarPedido() {
 
-        dialog.dismiss();
+        final DatabaseReference pedidoRef = firebaseRef
+                .child("pedidos_usuario")
+                .child(idEmpresa)
+                .child(idUsuarioLogado);
+
+        pedidoRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+
+                qtdItensCarrinho = 0;
+                totalCarrinho = 0.0;
+                itensCarrinho = new ArrayList<>();
+
+                if(dataSnapshot.getValue() != null){
+
+                    pedidoRecuperado = dataSnapshot.getValue(Pedido.class );
+                    itensCarrinho = pedidoRecuperado.getItens();
+
+
+                    for(ItemPedido itemPedido: itensCarrinho){
+
+
+                        int qtde = itemPedido.getQuantidade();
+                        Double preco = itemPedido.getPreco();
+
+                        totalCarrinho += (qtde * preco);
+                        qtdItensCarrinho += qtde;
+
+
+                    }
+
+
+                }
+
+                DecimalFormat df = new DecimalFormat("0.00");
+
+                textCarrinhoQtd.setText( "qtd: " + String.valueOf(qtdItensCarrinho));
+                textCarrinhoTotal.setText("€ " + df.format(totalCarrinho));
+
+                dialog.dismiss();
+
+
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+
+
 
     }
 
@@ -281,6 +337,9 @@ public class MenuActivity extends AppCompatActivity {
         recyclerProdutosCardapio = findViewById(R.id.recyclerProdutoCardapio);
         imageEmpresaCardapio = findViewById(R.id.imageEmpresaCardapio);
         textNomeEmpresaCardapio = findViewById(R.id.textNomeEmpresaCardapio);
+
+        textCarrinhoQtd = findViewById(R.id.textCarrinhoQuantidade);
+        textCarrinhoTotal = findViewById(R.id.textCarrinhoTotal);
 
     }
 }

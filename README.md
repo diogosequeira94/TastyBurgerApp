@@ -8,10 +8,9 @@ Cocktial Application with Cocktial Recipes, Bar tips, a Bar Manual, using Fireba
 <h4> Libraries / Dependencies Used </h4>
 
 - Firebase </br>
-- Carroussel View  </br>
 - Spots-Dialog </br>
 - Currency Edit Text </br>
-- Glide </br>
+- Material Search View </br>
 - Picasso </br>
 </br>
 <h4> Demo </h4>
